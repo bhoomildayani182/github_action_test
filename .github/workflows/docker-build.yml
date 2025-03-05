@@ -33,6 +33,8 @@ jobs:
       - name: Verify Docker Image
         run: docker image inspect ${{ inputs.image_name }}:$IMAGE_TAG
 
+      - name: Create Reports Directory
+        run: mkdir -p trivy-reports
 
       - name: Run Trivy Security Scan (Full Report in HTML)
         uses: aquasecurity/trivy-action@master
@@ -50,8 +52,7 @@ jobs:
           name: trivy-report
           path: trivy-reports/full-trivy-report.html
 
-
-      - name: Run Trivy Security Scan (Full Report in HTML)
+      - name: Run Trivy Security Scan (Critical Only Report in HTML)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: '${{ inputs.image_name }}:${{ env.IMAGE_TAG }}'
@@ -61,8 +62,8 @@ jobs:
           exit-code: 1
           severity: 'HIGH,CRITICAL'
 
-      - name: Upload Trivy report
+      - name: Upload Critical Trivy Report
         uses: actions/upload-artifact@v4
         with:
-          name: trivy-report
+          name: critical-trivy-report
           path: trivy-reports/critical-trivy-report.html
