@@ -15,7 +15,7 @@ on:
 
 jobs:
   Analysis:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4

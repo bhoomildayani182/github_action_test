@@ -14,7 +14,7 @@ on:
 jobs:
   Docker-Push:
     name: Docker Image Push to Docker Registry
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4

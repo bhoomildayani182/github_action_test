@@ -7,14 +7,11 @@ on:
         required: false
         type: string
         default: '20'
-      image_name:
-        required: true
-        type: string
 
 jobs:
   UnitTest:
     name: Unit Testing
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -30,34 +27,3 @@ jobs:
           
       - name: Run Unit Tests
         run: npm test -- --ci --passWithNoTests
-
-      - name: Remove Unnecessary Docker Images
-        run: |
-          # List of image names to KEEP (space-separated)
-          KEEP_IMAGES=(${{ inputs.image_name }})
-
-          # Get all Docker image IDs
-          ALL_IMAGES=$(docker images -q)
-
-          # Get IDs of images to keep
-          KEEP_IDS=()
-          for IMAGE in "${KEEP_IMAGES[@]}"; do
-              IDS=$(docker images --format "{{.ID}}" "$IMAGE")
-              if [ -n "$IDS" ]; then
-                  KEEP_IDS+=($IDS)
-              fi
-          done
-
-          # Convert KEEP_IDS to a space-separated string
-          KEEP_IDS_STRING="${KEEP_IDS[@]}"
-
-          # Delete all images except the ones in KEEP_IDS
-          for ID in $ALL_IMAGES; do
-              if [[ ! " ${KEEP_IDS_STRING} " =~ " ${ID} " ]]; then
-                  echo "Deleting image: $ID"
-                  docker rmi -f "$ID"
-              else
-                  echo "Skipping image: $ID (kept)"
-              fi
-          done
-

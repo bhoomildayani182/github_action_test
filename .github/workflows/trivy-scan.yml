@@ -6,37 +6,16 @@ on:
       image_name:
         required: true
         type: string
-      template_path:
-        required: true
-        type: string
-      nginx_html_file_fullreportpath:
-        required: true
-        type: string
-      template_dir_path:
-        required: true
-        type: string
-      template_url:
-        required: true
-        type: string
-      nginx_html_file_criticalreportpath:
-        required: true
-        type: string
 
 jobs:
   Trivy:
     name: Trivy for Docker Image Scan
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
-      - name: Ensure Trivy Template Directory Exists
-        run: mkdir -p ${{ inputs.template_dir_path }}
-        
-      - name: Download Trivy HTML Template
-        run: wget -O ${{ inputs.template_path }} ${{ inputs.template_url }}
 
       - name: Set Image Tag
         id: set-tag
@@ -47,22 +26,24 @@ jobs:
             echo "IMAGE_TAG=latest" >> $GITHUB_ENV
           fi
 
-      - name: Run Trivy Security Scan (Full Report in HTML)
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: '${{ inputs.image_name }}:${{ env.IMAGE_TAG }}'
-          format: 'template'
-          template: "@${{ inputs.template_path }}"
-          output: ${{ inputs.nginx_html_file_fullreportpath }}
-          exit-code: 0 
-          severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
-      
+      - name: Run Trivy Security Scan (Full Report)
+        run: |
+          trivy image '${{ inputs.image_name }}:${{ env.IMAGE_TAG }}' \
+          --format table > trivy-full-report.txt || true
+
       - name: Run Trivy Security Scan (Fail on High/Critical)
-        uses: aquasecurity/trivy-action@master
+        run: |
+          trivy image '${{ inputs.image_name }}:${{ env.IMAGE_TAG }}' \
+          --format table --exit-code 1 --severity HIGH,CRITICAL > trivy-critical-report.txt || true
+
+      - name: Upload Trivy Full Report
+        uses: actions/upload-artifact@v4
         with:
-          image-ref: '${{ inputs.image_name }}:${{ env.IMAGE_TAG }}'
-          format: 'template'
-          template: "@${{ inputs.template_path }}"
-          output: ${{ inputs.nginx_html_file_criticalreportpath }}
-          exit-code: 1
-          severity: 'HIGH,CRITICAL'
+          name: trivy-full-report
+          path: trivy-full-report.txt
+
+      - name: Upload Trivy Critical Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-critical-report
+          path: trivy-critical-report.txt
