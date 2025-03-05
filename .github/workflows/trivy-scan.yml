@@ -17,6 +17,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+
       - name: Set Image Tag
         id: set-tag
         run: |
