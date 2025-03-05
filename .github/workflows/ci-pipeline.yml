@@ -1,0 +1,57 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches:
+      - developer
+      - main
+      - UAT
+
+jobs:
+  unit-test:
+    name: Run Unit Tests
+    uses: ./.github/workflows/unit-test.yml  # Calls the reusable workflow
+    with:
+      node_version: '20'
+      image_name: '"qntmnet/qam_api" "snyk/snyk " "moby/buildkit" "postgres" "sonarqube"'
+
+  sonar-analysis:
+    name: SonarQube Analysis
+    needs: unit-test
+    uses: ./.github/workflows/sonarqube.yml
+    with:
+      timeout-minutes: 5
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+  
+  snyk-security:
+    name: Snyk Security Scan
+    needs: unit-test
+    uses: ./.github/workflows/snyk-scan.yml
+    secrets:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  docker-build:
+    name: Docker Image Build
+    if: github.base_ref != 'developer'
+    needs: 
+      - unit-test
+      - snyk-security
+      - sonar-analysis
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      image_name: "qntmnet/qam_api"
+  
+  trivy-scan:
+    name: Trivy Image Scan
+    if: github.base_ref != 'developer'
+    needs: docker-build
+    uses: ./.github/workflows/trivy-scan.yml
+    with:
+      image_name: "qntmnet/qam_api"
+      template_path: "/home/qnadmin/actions-runner/trivy-templates/html.tpl"
+      nginx_html_file_fullreportpath: "/var/www/html/full-trivy-report.html"
+      nginx_html_file_criticalreportpath: "/var/www/html/critical-trivy-report.html"
+      template_dir_path: "/home/qnadmin/actions-runner/trivy-templates"
+      template_url: "https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl"

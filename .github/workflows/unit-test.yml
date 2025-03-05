@@ -1,0 +1,63 @@
+name: Unit Testing
+
+on:
+  workflow_call:  # Allows this workflow to be triggered by another workflow
+    inputs:
+      node_version:
+        required: false
+        type: string
+        default: '20'
+      image_name:
+        required: true
+        type: string
+
+jobs:
+  UnitTest:
+    name: Unit Testing
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+          
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: 'npm'
+          
+      - name: Install Dependencies
+        run: npm ci
+          
+      - name: Run Unit Tests
+        run: npm test -- --ci --passWithNoTests
+
+      - name: Remove Unnecessary Docker Images
+        run: |
+          # List of image names to KEEP (space-separated)
+          KEEP_IMAGES=(${{ inputs.image_name }})
+
+          # Get all Docker image IDs
+          ALL_IMAGES=$(docker images -q)
+
+          # Get IDs of images to keep
+          KEEP_IDS=()
+          for IMAGE in "${KEEP_IMAGES[@]}"; do
+              IDS=$(docker images --format "{{.ID}}" "$IMAGE")
+              if [ -n "$IDS" ]; then
+                  KEEP_IDS+=($IDS)
+              fi
+          done
+
+          # Convert KEEP_IDS to a space-separated string
+          KEEP_IDS_STRING="${KEEP_IDS[@]}"
+
+          # Delete all images except the ones in KEEP_IDS
+          for ID in $ALL_IMAGES; do
+              if [[ ! " ${KEEP_IDS_STRING} " =~ " ${ID} " ]]; then
+                  echo "Deleting image: $ID"
+                  docker rmi -f "$ID"
+              else
+                  echo "Skipping image: $ID (kept)"
+              fi
+          done
+

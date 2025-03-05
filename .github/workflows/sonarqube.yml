@@ -1,0 +1,41 @@
+name: SonarQube Analysis
+
+on:
+  workflow_call:
+    inputs:
+      timeout-minutes:
+        required: false
+        type: number
+        default: 5
+    secrets:
+      SONAR_TOKEN:
+        required: true
+      SONAR_HOST_URL:
+        required: true
+
+jobs:
+  Analysis:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensure full commit history for better analysis
+                 
+      - uses: sonarsource/sonarqube-scan-action@v3
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - name: SonarQube Quality Gate Check
+        id: quality-gate
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        timeout-minutes: ${{ inputs.timeout-minutes }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Fail if Quality Gate Fails
+        if: steps.quality-gate.outputs.quality-gate-status != 'PASSED'
+        run: |
+          echo "❌ SonarQube Quality Gate Failed. Fix the issues before merging."
+          exit 1

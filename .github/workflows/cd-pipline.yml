@@ -1,0 +1,31 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - UAT
+  release:
+    types:
+      - created  # Trigger when a new release is created      
+
+jobs:
+  docker-push:
+    name: Docker Image Push
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/docker-push.yml
+    with:
+      image_name: "qntmnet/qam_api"
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+
+  docker-push-release:
+    name: Docker Image Push (Release)
+    if: github.event_name == 'release'
+    uses: ./.github/workflows/release.yml
+    with:
+      image_name: "qntmnet/qam_api"
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
