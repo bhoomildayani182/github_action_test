@@ -31,7 +31,7 @@ jobs:
     secrets:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-  docker-build:
+  docker-build-trivy-test:
     name: Docker Image Build
     if: github.base_ref != 'developer'
     needs: 
@@ -42,10 +42,10 @@ jobs:
     with:
       image_name: "qntmnet/qam_api"
   
-  trivy-scan:
-    name: Trivy Image Scan
-    if: github.base_ref != 'developer'
-    needs: docker-build
-    uses: ./.github/workflows/trivy-scan.yml
-    with:
-      image_name: "qntmnet/qam_api"
+  # trivy-scan:
+  #   name: Trivy Image Scan
+  #   if: github.base_ref != 'developer'
+  #   needs: docker-build
+  #   uses: ./.github/workflows/trivy-scan.yml
+  #   with:
+  #     image_name: "qntmnet/qam_api"
