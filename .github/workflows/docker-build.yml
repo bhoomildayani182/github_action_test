@@ -1,4 +1,4 @@
-name: Docker Image Build
+name: Docker Image Build and Trivy Scan Image
 
 on:
   workflow_call:

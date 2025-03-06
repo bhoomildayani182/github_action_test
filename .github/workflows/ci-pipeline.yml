@@ -14,15 +14,15 @@ jobs:
     with:
       node_version: '20'
 
-  # sonar-analysis:
-  #   name: SonarQube Analysis
-  #   needs: unit-test
-  #   uses: ./.github/workflows/sonarqube.yml
-  #   with:
-  #     timeout-minutes: 5
-  #   secrets:
-  #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  #     SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+  sonar-analysis:
+    name: SonarQube Analysis
+    needs: unit-test
+    uses: ./.github/workflows/sonarqube.yml
+    with:
+      timeout-minutes: 5
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
   
   snyk-security:
     name: Snyk Security Scan
@@ -37,15 +37,7 @@ jobs:
     needs: 
       - unit-test
       - snyk-security
-      # - sonar-analysis
+      - sonar-analysis
     uses: ./.github/workflows/docker-build.yml
     with:
       image_name: "qntmnet/qam_api"
-  
-  # trivy-scan:
-  #   name: Trivy Image Scan
-  #   if: github.base_ref != 'developer'
-  #   needs: docker-build
-  #   uses: ./.github/workflows/trivy-scan.yml
-  #   with:
-  #     image_name: "qntmnet/qam_api"
