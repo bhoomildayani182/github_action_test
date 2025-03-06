@@ -1,4 +1,4 @@
-name: Docker Image Build
+name: Docker Image Build and Trivy Scan Image
 
 on:
   workflow_call:
@@ -8,9 +8,9 @@ on:
         type: string
 
 jobs:
-  ImageBuild:
+  ImageBuild-Test:
     name: Docker Image Build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -32,3 +32,41 @@ jobs:
 
       - name: Verify Docker Image
         run: docker image inspect ${{ inputs.image_name }}:$IMAGE_TAG
+
+      - name: Create Reports Directory
+        run: mkdir -p trivy-reports
+
+      - name: Download Trivy HTML Template
+        run: curl -L https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl -o html.tpl
+
+      - name: Run Trivy Security Scan (Full Report in HTML)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ inputs.image_name }}:${{ env.IMAGE_TAG }}'
+          format: 'template'
+          template: "html.tpl"
+          output: "trivy-reports/full-trivy-report.html"
+          exit-code: 0
+          severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
+
+      - name: Upload Trivy Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-reports/full-trivy-report.html
+
+      - name: Run Trivy Security Scan (Critical Only Report in HTML)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ inputs.image_name }}:${{ env.IMAGE_TAG }}'
+          format: 'template'
+          template: "html.tpl"
+          output: "trivy-reports/critical-trivy-report.html"
+          exit-code: 1
+          severity: 'HIGH,CRITICAL'
+
+      - name: Upload Critical Trivy Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: critical-trivy-report
+          path: trivy-reports/critical-trivy-report.html
