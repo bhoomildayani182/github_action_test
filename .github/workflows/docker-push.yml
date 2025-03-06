@@ -33,7 +33,7 @@ jobs:
 
       - name: Push Docker Image
         run: |
-          docker push ${{ inputs.image_name }}:$IMAGE_TAG
+          docker push ${{ inputs.image_name }}:${{ env.IMAGE_TAG }}
 
       - name: Set Image as Private
         run: |
