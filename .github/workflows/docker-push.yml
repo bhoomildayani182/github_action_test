@@ -19,6 +19,21 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set Image Tag
+        id: set-tag
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "IMAGE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          fi
+          
+      - name: Build Docker Image
+        run: docker build -t ${{ inputs.image_name }}:$IMAGE_TAG .
+        
       - name: Login to Docker Registry
         run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
